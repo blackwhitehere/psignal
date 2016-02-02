@@ -8,7 +8,7 @@ output: html_document
 
 
 ```{r}
-packages <- c("dplyr", "tidyr", "ggplot2", "caret")
+packages <- c("dplyr", "tidyr", "ggplot2", "caret", "corrplot")
 sapply(packages, library, character.only = TRUE)
 
 setwd("C:/Users/Jonno/Dropbox/Data_Analytics/Data") #change this to your file path
@@ -105,8 +105,8 @@ Remove Low variance variables, and high correllation variables
 corprep <- symbology[,6:47]
 constantVars <- corprep[,nearZeroVar(corprep)] %>% names
 corprep <- corprep[,-nearZeroVar(corprep)]
-#names(corprep) <- paste("X",1:ncol(corprep), sep="")
-x <- cor(corprep)
+names(corprep) <- paste("X",1:ncol(corprep), sep="")
+corsymb <- cor(corprep)
 highCorNames <- corprep[,c(findCorrelation(x, 0.9))] %>% names
 
 
@@ -114,6 +114,8 @@ x <- table(SymbologyLowCor$exchange) %>% data.frame %>% rename(exchange = Var1) 
   left_join(. , ExchGath2, by = "exchange") %>% 
   mutate_each(funs(perc = ./sum(.)), -exchange)
 
+
+corrplot(corsymb, method = "shade", order = "hclust", title = "Corellation plot of symbology variables", tl.pos = "n")
 ```
 
 
@@ -128,8 +130,7 @@ twitscan <- symbology %>% select(exchange,
 
 twitscan <- twitscan %>%  mutate(year= gsub("_avg_monthly","",twitscan$year ) %>%as.integer ) 
 
-ggplot(twitscan, aes(x= exchange, y  =log10(scanned+1) )) +geom_boxplot() +ggtitle("Average monthly scanned tweets across \nall symbols and years broken out by Exchange") + 
-  theme(axis.text.x = element_text(angle = 45))
+ggplot(twitscan, aes(x= exchange, y  =log10(scanned+1), fill = exchange )) +geom_boxplot() +ggtitle("Average monthly scanned tweets across \nall symbols and years broken out by Exchange") + theme(axis.text.x = element_text(angle = 45))+ guides(fill=FALSE)
 
 
 twitscanagg <- twitscan %>% group_by(exchange, year) %>% summarise(scanned = sum(scanned))
@@ -148,8 +149,8 @@ twitscore <- symbology %>% select(exchange,
 twitscore  %<>% mutate( year= gsub("twitter_scored_","",twitscore$year )) #I can't remove text around the year in one stage for some reason.
 twitscore %<>%  mutate(year= gsub("_avg_monthly","",twitscore$year ) %>%as.integer ) 
 
-ggplot(twitscore, aes(x= exchange, y  =log10(scored+1) )) +geom_boxplot() +ggtitle("Average monthly scored tweets across\n all symbols and years broken out by Exchange") + 
-  theme(axis.text.x = element_text(angle = 45))
+ggplot(twitscore, aes(x= exchange, y  =log10(scored+1), fill = exchange )) +geom_boxplot() +ggtitle("Average monthly scored tweets across\n all symbols and years broken out by Exchange") + 
+  theme(axis.text.x = element_text(angle = 45))+ guides(fill=FALSE)
 
 
 twitscoreagg <- twitscore %>% group_by(exchange, year) %>% summarise(scored = sum(scored))
