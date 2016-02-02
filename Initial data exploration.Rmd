@@ -1,0 +1,71 @@
+---
+title: "Data analytics summary"
+author: "Jonathan Bourne"
+date: "1 February 2016"
+output: html_document
+---
+
+
+blah
+
+```{r}
+packages <- c("dplyr", "tidyr", "ggplot2")
+sapply(packages, library, character.only = TRUE)
+
+setwd("C:/Users/Jonno/Dropbox/Data_Analytics/Data") #change this to your file path
+
+#TwitRetweets <- read.csv(gzfile("twitter_withretweets_daily.csv.gz"), as.is = TRUE)
+TwitNoRetweets <- read.csv("twitter_noretweets_daily.csv", as.is = TRUE)
+
+#stocktwits <- read.csv(gzfile("stocktwits_daily.csv.gz"), as.is = TRUE)
+
+
+```
+
+
+total number of time units and companies
+```{r}
+length(unique(TwitNoRetweets$SYMBOL)) %>% paste("Number of unique symbols")
+length(unique(TwitNoRetweets$TIMESTAMP_UTC)) %>% paste("Number of unique timestamps", .)
+```
+
+summary of each variable
+
+```{r}
+summary(TwitNoRetweets)
+```
+
+
+Density plots of all variables except Source, Symbol, Timestamp utc,
+
+The density plots show that almost all the variables are highly skewes except for bull minus bear which is roughly symmetrical. 
+```{r}
+
+sapply(c(1:10)[-c(1:3)], function(n) {
+  
+  plot(density(TwitNoRetweets[,n]), main = names(TwitNoRetweets)[n])
+})
+
+
+```
+
+
+log Density plots +1 of all variables except Source, Symbol, Timestamp utc, Bull minus Bear
+
+Because of the high level of skew log density plots could give us more information, 1 was added to all values to prevent log zero errors, as there are a lot of zeros
+
+Bull and bear scored messages as well as total scanned messages follow an attenuating peaked pattern
+```{r}
+
+sapply(c(1:10)[-c(1:3,6)], function(n) {
+  
+  plot(density(log10(TwitNoRetweets[,n]+1)), main = names(TwitNoRetweets)[n])
+})
+
+
+```
+
+
+Aggregate to a reasonable number of groups
+plot vs time
+Plot densities
