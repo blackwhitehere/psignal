@@ -8,7 +8,7 @@ output: html_document
 
 
 ```{r}
-packages <- c("dplyr", "tidyr", "ggplot2", "caret", "corrplot")
+packages <- c("dplyr", "tidyr", "ggplot2", "caret", "corrplot", "xtable")
 sapply(packages, library, character.only = TRUE)
 
 setwd("C:/Users/Jonno/Dropbox/Data_Analytics/Data") #change this to your file path
@@ -159,6 +159,28 @@ ggplot(twitscoreagg, aes(x = year, y= log10(scored), colour = exchange)) +geom_l
 
 
 
+```
+
+Plot the cumulative amount of tweets against the cumulative rank, to find how many stocks we need to have 80% of the tweet volume
+```{r}
+twitscanvol <- symbology %>% select(symbol, all_scanned_2015_avg_monthly, exchange) %>% 
+  rename(year_2015= all_scanned_2015_avg_monthly) %>%
+  arrange(year_2015) %>%
+  mutate(cumtwits = cumsum(year_2015), CumPercTwit = cumtwits/sum(year_2015) ,CumPercRank = rownames(twitscanvol) %>% as.integer %>% percent_rank)
+
+ggplot(twitscanvol, aes(x= CumPercRank, y = CumPercTwit, colour= exchange)) +geom_point()+ggtitle("Cumulative percent of tweets vs \n Cumulative rank of symbol")
+
+x <- findInterval(0.2, twitscanvol$CumPercTwit) #index to take from
+
+criticalsymb <- twitscanvol[x:nrow(twitscanvol),] %>% droplevels %>% group_by(exchange) %>%
+  summarise(tweets = sum(year_2015), NumSymbols = n()) %>%
+  arrange(tweets) %>% 
+  mutate(PercTweets = tweets/sum(tweets) , PercTweets=round(PercTweets,digits= 2),
+         CumPercTweets = cumsum(PercTweets),
+         CumPerc = percent_rank(tweets) %>% round(digits= 2))
+
+
+xtable(criticalsymb) #for output to the Latex doc
 ```
 
 
