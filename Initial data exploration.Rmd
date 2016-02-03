@@ -93,6 +93,11 @@ xtable(DataSetsInfo2, label = "tab:DataSetsInfo", caption = "Key Elements from t
 
 ```
 
+Remove the datasets to save RAM
+```{r}
+rm(Data)
+```
+
 
 Load No retweets
 ```{r}
@@ -243,6 +248,17 @@ ggplot(twitscanvol, aes(x= CumPercRank, y = CumPercTwit, colour= exchange)) +geo
 ggsave("TweetVolCumLineplot.png")
 
 
+criticalsymb1 <-twitscanvol %>% droplevels %>% group_by(exchange) %>%
+  summarise(tweets = sum(year_2015), NumSymbols = n()) %>%
+  arrange(-tweets) %>% 
+  mutate(PercTweets = tweets/sum(tweets) , PercTweets=round(PercTweets,digits= 2),
+         CumPercTwit = cumsum(PercTweets),
+         CumPercSymb = NumSymbols/sum(NumSymbols),
+         CumPercSymb = cumsum(CumPercSymb) %>% round(., digits = 2))
+
+
+xtable(criticalsymb, caption="Sum of Average monthly Twitter volume per symbol agreggated by exchange, NYSE, NASDAQ and NYSEArca account for over 70\\% of all symbols, and 90\\% of all Twitter volume", label = "tab:twittervolume") #for output to the Latex doc
+
 x <- findInterval(0.8, twitscanvol$CumPercTwit) #index to take from
 
 criticalsymb <- twitscanvol[1:x,] %>% droplevels %>% group_by(exchange) %>%
@@ -253,16 +269,10 @@ criticalsymb <- twitscanvol[1:x,] %>% droplevels %>% group_by(exchange) %>%
          CumPercSymb = NumSymbols/sum(NumSymbols),
          CumPercSymb = cumsum(CumPercSymb) %>% round(., digits = 2))
 
-xtable(criticalsymb, caption="Breakdown of 80% of the scanned tweet volume in 2015 aggregated by exchange, ") #for output to the Latex doc
+xtable(criticalsymb, caption="Breakdown of 80\\% of the scanned tweet volume in 2015 aggregated by exchange, The NYSE, NASDAQ and NYSEArca are still the dominant excahnges for twitter volume",
+       label = "tab:twittervolume80perc") #for output to the Latex doc
 
-# 
-# criticalsymb1 <-twitscanvol %>% droplevels %>% group_by(exchange) %>%
-#   summarise(tweets = sum(year_2015), NumSymbols = n()) %>%
-#   arrange(-tweets) %>% 
-#   mutate(PercTweets = tweets/sum(tweets) , PercTweets=round(PercTweets,digits= 2),
-#          CumPercTwit = cumsum(PercTweets),
-#          CumPercSymb = NumSymbols/sum(NumSymbols),
-#          CumPercSymb = cumsum(CumPercSymb) %>% round(., digits = 2))
+
 # ggplot(criticalsymb1, aes(x= CumPercSymb, y = CumPercTwit)) +geom_line()+ggtitle("Cumulative percent of tweets vs \n Cumulative rank of exchange for top 80% of data")
 
 ```
