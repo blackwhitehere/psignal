@@ -5,28 +5,102 @@ date: "1 February 2016"
 output: html_document
 ---
 
+The Goal of this document is to provide summary statistics for Milestone 1 of the Data Analytics project with PsychSignal
 
 
 ```{r}
-packages <- c("dplyr", "tidyr", "ggplot2", "caret", "corrplot", "xtable")
+packages <- c("dplyr", "tidyr", "ggplot2", "caret", "corrplot", "xtable", "magrittr")
 sapply(packages, library, character.only = TRUE)
 
-setwd("C:/Users/Jonno/Dropbox/Data_Analytics/Data") #change this to your file path
+
+basewd <- "C:/Users/Jonno/Dropbox/Data_Analytics" #change this to your dropbox file path for data analytics
+DataFiles <- file.path(basewd, "Data")
+GraphicsFiles <- file.path(basewd, "Graphics", "Milestone1")
 
 #TwitRetweets <- read.csv(gzfile("twitter_withretweets_daily.csv.gz"), as.is = TRUE)
-TwitNoRetweets <- read.csv("twitter_noretweets_daily.csv", as.is = TRUE)
 
 #stocktwits <- read.csv(gzfile("stocktwits_daily.csv.gz"), as.is = TRUE)
 
 
 ```
 
+Create Empty data frame with required variables
+```{r}
+
+DataSetsInfo <- data.frame(Name = character(), Observations = integer(), Symbols = integer(), TimePeriodStart = character(),TimePeriodEnd = character(), TimePeriods = integer(), TotalVariables = integer(), MeanScanned = integer(), MedianScanned = integer(), SDScanned = integer())
+```
 
 total number of time units and companies
 ```{r}
-length(unique(TwitNoRetweets$SYMBOL)) %>% paste("Number of unique symbols")
-length(unique(TwitNoRetweets$TIMESTAMP_UTC)) %>% paste("Number of unique timestamps", .)
+setwd(DataFiles)
+Data <- read.csv("twitter_noretweets_daily.csv", as.is = TRUE)
+
+tempdat <- data.frame(Name = "TwitNoRetweets",
+                       Observations = nrow(Data), 
+                       Symbols = length(unique(Data$SYMBOL)), 
+                       TimePeriodStart = min(Data$TIMESTAMP_UTC),
+                       TimePeriodEnd = max(Data$TIMESTAMP_UTC), 
+                       TimePeriods = length(unique(Data$TIMESTAMP_UTC)),
+                       TotalVariables = ncol(Data),
+                       MeanScanned = mean(Data$TOTAL_SCANNED_MESSAGES) %>% round,
+                       MedianScanned = median(Data$TOTAL_SCANNED_MESSAGES),
+                       SDScanned = sd(Data$TOTAL_SCANNED_MESSAGES) %>% round
+                      )
+
+DataSetsInfo %<>% rbind(., tempdat)
+
+Data<- read.csv(gzfile("twitter_withretweets_daily.csv.gz"), as.is = TRUE)
+
+tempdat <- data.frame(Name = "TwitRetweets",
+                       Observations = nrow(Data), 
+                       Symbols = length(unique(Data$SYMBOL)), 
+                       TimePeriodStart = min(Data$TIMESTAMP_UTC),
+                       TimePeriodEnd = max(Data$TIMESTAMP_UTC), 
+                       TimePeriods = length(unique(Data$TIMESTAMP_UTC)),
+                       TotalVariables = ncol(Data),
+                       MeanScanned = mean(Data$TOTAL_SCANNED_MESSAGES) %>% round,
+                       MedianScanned = median(Data$TOTAL_SCANNED_MESSAGES),
+                       SDScanned = sd(Data$TOTAL_SCANNED_MESSAGES) %>% round
+                      )
+           
+DataSetsInfo %<>% rbind(., tempdat)
+
+Data<- read.csv(gzfile("stocktwits_daily.csv.gz"), as.is = TRUE)
+
+tempdat <- data.frame(Name = "stocktwits",
+                       Observations = nrow(Data), 
+                       Symbols = length(unique(Data$SYMBOL)), 
+                       TimePeriodStart = min(Data$TIMESTAMP_UTC),
+                       TimePeriodEnd = max(Data$TIMESTAMP_UTC), 
+                       TimePeriods = length(unique(Data$TIMESTAMP_UTC)),
+                       TotalVariables = ncol(Data),
+                       MeanScanned = mean(Data$TOTAL_SCANNED_MESSAGES) %>% round,
+                       MedianScanned = median(Data$TOTAL_SCANNED_MESSAGES),
+                       SDScanned = sd(Data$TOTAL_SCANNED_MESSAGES) %>% round
+                      )
+           
+DataSetsInfo %<>% rbind(., tempdat)
+
+DataSetsInfo2 <- DataSetsInfo %>% mutate( TimePeriodStart = sub("T.*", "", .$TimePeriodStart), TimePeriodEnd = sub("T.*", "", .$TimePeriodEnd))
+
+xtable(DataSetsInfo, label = "tab:DataSetsInfo", caption = "Key Elements from the time series datasets are shown in this table. The data are quite similar with a few notable differences. Stocktwits contains significantlt less observations than the other two datasets, but contains more time periods. The distribution of the tweets per time period is highly skewed, with the mean almost 10 time the median, and a very large Standard Deviation across all variables.")
+
+DataSetsInfo2 <- DataSetsInfo2 %>% t  %>% data.frame
+names(DataSetsInfo2) <- sapply(DataSetsInfo2[1,], as.character)
+DataSetsInfo2 <- DataSetsInfo2[-1,]
+
+xtable(DataSetsInfo2, label = "tab:DataSetsInfo", caption = "Key Elements from the time series datasets are shown in this table. The data are quite similar with a few notable differences. Stocktwits contains significantlt less observations than the other two datasets, but contains more time periods. The distribution of the tweets per time period is highly skewed, with the mean almost 10 time the median, and a very large Standard Deviation across all variables.")
+
 ```
+
+
+Load No retweets
+```{r}
+setwd(DataFiles)
+TwitNoRetweets <- read.csv("twitter_noretweets_daily.csv", as.is = TRUE)
+setwd(GraphicsFiles)
+```
+
 
 summary of each variable
 
@@ -70,50 +144,45 @@ rm(TwitNoRetweets)
 ```
 
 
-Aggregate to a reasonable number of groups
-plot vs time
-Plot densities
-
 bull bear vs index returns.
 
-Cumulative stock tweets per cash tag. does the top 10percent rep 90 % of the whole thing
-
-change in tweet volume over time. 
-is there a difference in change in tweet volume by industry.
 
 Load symbology
 ```{r}
+setwd(DataFiles) 
 symbology <- read.csv("symbology.csv")
+setwd(GraphicsFiles) 
 ```
 
 ```{r}
 summary(symbology)
 ```
 
-
+Summary Table for symbols data
 ```{r}
-length(unique(symbology$symbol)) %>% paste("Number of unique symbols")
-length(unique(symbology$exchange)) %>% paste("Number of unique exchanges", .)
-length(unique(symbology$sector)) %>% paste("Number of unique sectors", .)
-length(unique(symbology$industry)) %>% paste("Number of unique industries", .)
 
+symbolsDat <- data.frame(Symbols= nrow(symbology),
+                       Exchanges = length(unique(symbology$exchange)),
+                       Sectors = length(unique(symbology$sector)),
+                       Industries = length(unique(symbology$industry)),
+                       TotalVariables = ncol(symbology)
+                       )
+
+xtable(symbolsDat, caption = "Summary of the Symbols Dataset. This data set also includes aggregated data on Cashtag frequency per symbol. Tweet frequency is discussed elsewhere in this report.", label = "tab:symbolsDat")
 ```
 
 
 Remove Low variance variables, and high correllation variables
+
+High correlation variables can be included in a table as a point of note, also Low varience variables.
+A corelation plot grouped using hierarchical clustering is also produced
 ```{r}
 corprep <- symbology[,6:47]
 constantVars <- corprep[,nearZeroVar(corprep)] %>% names
 corprep <- corprep[,-nearZeroVar(corprep)]
-names(corprep) <- paste("X",1:ncol(corprep), sep="")
+#names(corprep) <- paste("X",1:ncol(corprep), sep="")
 corsymb <- cor(corprep)
-highCorNames <- corprep[,c(findCorrelation(x, 0.9))] %>% names
-
-
-x <- table(SymbologyLowCor$exchange) %>% data.frame %>% rename(exchange = Var1) %>% 
-  left_join(. , ExchGath2, by = "exchange") %>% 
-  mutate_each(funs(perc = ./sum(.)), -exchange)
-
+highCorNames <- corprep[,c(findCorrelation(corsymb, 0.9))] %>% names
 
 corrplot(corsymb, method = "shade", order = "hclust", title = "Corellation plot of symbology variables", tl.pos = "n")
 ```
@@ -126,16 +195,17 @@ twitscan <- symbology %>% select(exchange,
                                  -contains("January"), 
                                  -contains("YTD")) %>% 
   gather(key = year, value = scanned, -exchange ) %>% 
-  mutate( year= gsub("twitter_scanned_","",twitscan$year )) #I can't remove text around the year in one stage for some reason.
-
-twitscan <- twitscan %>%  mutate(year= gsub("_avg_monthly","",twitscan$year ) %>%as.integer ) 
+  mutate( year= gsub("twitter_scanned_","",.$year ) %>% 
+            gsub("_avg_monthly","", . ) %>%as.integer ) 
 
 ggplot(twitscan, aes(x= exchange, y  =log10(scanned+1), fill = exchange )) +geom_boxplot() +ggtitle("Average monthly scanned tweets across \nall symbols and years broken out by Exchange") + theme(axis.text.x = element_text(angle = 45))+ guides(fill=FALSE)
-
+ggsave("ScannedTweetsBoxplotByExchange.png")
 
 twitscanagg <- twitscan %>% group_by(exchange, year) %>% summarise(scanned = sum(scanned))
 
 ggplot(twitscanagg, aes(x = year, y= log10(scanned), colour = exchange)) +geom_line() +ggtitle("Number of scanned tweets \nacross all years broken out by exchange")
+ggsave("ScannedTweetsLineplotByExchange.png")
+
 
 ```
 
@@ -145,42 +215,56 @@ twitscore <- symbology %>% select(exchange,
                                  contains("twitter_scored"), 
                                  -contains("January"), 
                                  -contains("YTD")) %>% 
-  gather(key = year, value = scored, -exchange ) 
-twitscore  %<>% mutate( year= gsub("twitter_scored_","",twitscore$year )) #I can't remove text around the year in one stage for some reason.
-twitscore %<>%  mutate(year= gsub("_avg_monthly","",twitscore$year ) %>%as.integer ) 
+  gather(key = year, value = scored, -exchange ) %>%
+  mutate( year= gsub("twitter_scored_","",.$year ) %>% 
+            gsub("_avg_monthly","", . ) %>%as.integer)
 
 ggplot(twitscore, aes(x= exchange, y  =log10(scored+1), fill = exchange )) +geom_boxplot() +ggtitle("Average monthly scored tweets across\n all symbols and years broken out by Exchange") + 
   theme(axis.text.x = element_text(angle = 45))+ guides(fill=FALSE)
+ggsave("ScoredTweetsBoxplotByExchange.png")
 
 
 twitscoreagg <- twitscore %>% group_by(exchange, year) %>% summarise(scored = sum(scored))
 
 ggplot(twitscoreagg, aes(x = year, y= log10(scored), colour = exchange)) +geom_line() +ggtitle("Number of scored tweets \nacross all years broken out by exchange")
-
-
+ggsave("ScoredTweetsLineplotByExchange.png")
 
 ```
 
-Plot the cumulative amount of tweets against the cumulative rank, to find how many stocks we need to have 80% of the tweet volume
+
+Plot the cumulative amount of tweets against the cumulative rank, to find how many stocks we need to have 80% of the tweet volume, the data is taken from 2015
 ```{r}
 twitscanvol <- symbology %>% select(symbol, all_scanned_2015_avg_monthly, exchange) %>% 
   rename(year_2015= all_scanned_2015_avg_monthly) %>%
-  arrange(year_2015) %>%
-  mutate(cumtwits = cumsum(year_2015), CumPercTwit = cumtwits/sum(year_2015) ,CumPercRank = rownames(twitscanvol) %>% as.integer %>% percent_rank)
+  arrange(-year_2015) %>%
+  mutate(cumtwits = cumsum(year_2015), CumPercTwit = cumtwits/sum(year_2015) ,CumPercRank = rownames(.) %>% as.integer %>% percent_rank)
 
 ggplot(twitscanvol, aes(x= CumPercRank, y = CumPercTwit, colour= exchange)) +geom_point()+ggtitle("Cumulative percent of tweets vs \n Cumulative rank of symbol")
+ggsave("TweetVolCumLineplot.png")
 
-x <- findInterval(0.2, twitscanvol$CumPercTwit) #index to take from
 
-criticalsymb <- twitscanvol[x:nrow(twitscanvol),] %>% droplevels %>% group_by(exchange) %>%
+x <- findInterval(0.8, twitscanvol$CumPercTwit) #index to take from
+
+criticalsymb <- twitscanvol[1:x,] %>% droplevels %>% group_by(exchange) %>%
   summarise(tweets = sum(year_2015), NumSymbols = n()) %>%
-  arrange(tweets) %>% 
+  arrange(-tweets) %>% 
   mutate(PercTweets = tweets/sum(tweets) , PercTweets=round(PercTweets,digits= 2),
-         CumPercTweets = cumsum(PercTweets),
-         CumPerc = percent_rank(tweets) %>% round(digits= 2))
+         CumPercTwit = cumsum(PercTweets),
+         CumPercSymb = NumSymbols/sum(NumSymbols),
+         CumPercSymb = cumsum(CumPercSymb) %>% round(., digits = 2))
 
+xtable(criticalsymb, caption="Breakdown of 80% of the scanned tweet volume in 2015 aggregated by exchange, ") #for output to the Latex doc
 
-xtable(criticalsymb) #for output to the Latex doc
+# 
+# criticalsymb1 <-twitscanvol %>% droplevels %>% group_by(exchange) %>%
+#   summarise(tweets = sum(year_2015), NumSymbols = n()) %>%
+#   arrange(-tweets) %>% 
+#   mutate(PercTweets = tweets/sum(tweets) , PercTweets=round(PercTweets,digits= 2),
+#          CumPercTwit = cumsum(PercTweets),
+#          CumPercSymb = NumSymbols/sum(NumSymbols),
+#          CumPercSymb = cumsum(CumPercSymb) %>% round(., digits = 2))
+# ggplot(criticalsymb1, aes(x= CumPercSymb, y = CumPercTwit)) +geom_line()+ggtitle("Cumulative percent of tweets vs \n Cumulative rank of exchange for top 80% of data")
+
 ```
 
 
