@@ -70,4 +70,5 @@ for stock in ['AIG', 'AMD']: # twt['SYMBOL'].unique():
 
 print(results_dict['AMD']['sentiment_model'].summary())
 print(results_dict['AIG']['sentiment_model'].summary())
+print(results_dict['AIG']['market_ts'])
 

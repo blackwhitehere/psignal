@@ -76,7 +76,7 @@ def market_model(stock_ts, market_ts):
     r_t = t_plus_n_minus_1(stock_ts, 0)
     m_t = t_plus_n_minus_1(market_ts, 0)
 
-    dep_vars = np.concatenate((r_t.values,m_t.values), axis=1)
+    dep_vars = np.concatenate((r_t.values, m_t.values), axis=1)
     dep_vars = sm.add_constant(dep_vars)
     linreg = sm.OLS(r_t_plus_one.values, dep_vars)
 
