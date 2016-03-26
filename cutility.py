@@ -7,6 +7,7 @@ import Quandl as q
 import statsmodels.tsa.stattools as stat
 import statsmodels.api as sm
 from config import config as c
+from statsmodels.stats.stattools import durbin_watson
 
 
 def get_clustered_data(path):
@@ -39,8 +40,12 @@ def resample(ts, periods):
     return ts.resample(periods, how=cumret)
 
 
+def dw_stat(ts):
+    return durbin_watson(ts)
+
+
 def aug_dickey_fuller(ts, reg_type=c.df_reg_type, alpha=c.alpha):
-    dft = stat.adfuller(ts, regression=reg_type, autolag="BIC", store=True, regresults=True)
+    dft = stat.adfuller(ts, maxlag=2, regression=reg_type, autolag="BIC", store=True, regresults=True)
     pvalue = dft[1]
     return pvalue <= alpha
 
@@ -79,6 +84,10 @@ def t_plus_n_minus_1(ts, n):
     return ts[n:(len(ts) - 1)]
 
 
+def t_plus_n_minus_z(ts, n, z):
+    return ts[n:(len(ts) - z)]
+
+
 def t_plus_n(ts, n):
     return ts[n:len(ts)]
 
@@ -89,26 +98,28 @@ def market_model(stock_ts, market_ts):
     m_t = t_plus_n_minus_1(market_ts, 0)
     dep_vars = m_t.values
     dep_vars = sm.add_constant(dep_vars)
-    linreg = sm.OLS(r_t_plus_one.values, dep_vars)
+    linreg = sm.GLS(r_t_plus_one.values, dep_vars)
     return linreg.fit()
 
 
 def sentiment_model(market_model_resid, stock_ts, sentiment_ts):
-    y = t_plus_n(market_model_resid, 1)
     prevresids = t_plus_n_minus_1(market_model_resid, 0)
-    r_t = t_plus_n_minus_1(stock_ts, 0)
-    si_t = t_plus_n_minus_1(sentiment_ts, 0)
+    r_t = t_plus_n_minus_z(stock_ts, 1, 1)
+    si_t = t_plus_n_minus_z(sentiment_ts, 1, 1)
     print(len(prevresids))
+    #print(prevresids)
     print(len(r_t))
     print(len(si_t))
     dep_vars = pd.DataFrame(np.concatenate(
         (prevresids.reshape(len(prevresids), 1), r_t.values.reshape(len(r_t), 1), si_t.values.reshape(len(si_t), 1)),
         axis=1))
     dep_vars.columns = ['Residuals_t-1', 'Returns_t-1', 'CSI_t-1']
-    # dep_vars = pd.DataFrame(np.concatenate((prevresids.reshape(len(prevresids),1), si_t.values), axis=1))
-    # dep_vars.columns = ['Residuals_t-1', 'CSI_t-1']
+    y = t_plus_n(market_model_resid, 1)
+    print(len(y))
+    dep_vars.reset_index(inplace=True)
+    y = pd.DataFrame(y, index=range(0, len(y)))
     dep_vars = sm.add_constant(dep_vars)
-    linreg = sm.OLS(y, dep_vars)
+    linreg = sm.GLS(y, dep_vars)
     return linreg.fit()
 
 
@@ -119,16 +130,16 @@ def run_model(list_of_ts, model):
     return model(*integrated_factors), max_degree
 
 
-def change_in_sentiment_model_factor_list(market_model_resid, stock_ts, sentiment_ts):
-    delta = (t_plus_n(sentiment_ts, 1).values - t_plus_n_minus_1(sentiment_ts, 0).values)/t_plus_n_minus_1(sentiment_ts, 0).values
+def change_in_sentiment_model(sentiment_ts):
+    delta = (t_plus_n(sentiment_ts, 1).values - t_plus_n_minus_1(sentiment_ts, 0).values) / t_plus_n_minus_1(
+        sentiment_ts, 0).values
     index = sentiment_ts.index[1:len(sentiment_ts)]
     percentage_change_in_sentiment = pd.Series(delta.ravel(), index=index)
-    stock_ts = t_plus_n_minus_1(stock_ts, 0)
-    return [market_model_resid, stock_ts, percentage_change_in_sentiment]
+    return percentage_change_in_sentiment
 
 
 def format_result(param, pvalue):
-    return str(param)+" ({0})".format(pvalue)
+    return str(param) + " ({0})".format(pvalue)
 
 
 def mean_si(df):

@@ -52,10 +52,10 @@ class Config:
             os.makedirs(self.clusters_folder_without_CSI)
 
         # Clusters with CSI file dictionary:
-        self.csi_clusters_file_dict = {'Bearish Intensity': 'BearishIntensity.csv',
+        self.csi_clusters_file_dict = {'Bearish Intensity': 'BEARISH_INTENSITY.csv',
                                        'Bullish Intensity': 'BULLISH_INTENSITY.csv',
-                                       'Bull Bear Message Ratio': 'BULL_BEAR_MSG_RATIO.csv',
-                                       'Market Index': 'MarketIndex.csv'}  # TODO: Bull Minus Bear file missing
+                                       'Bull Bear Message Ratio': 'BULL_BEAR_MSG_RATIO.csv'
+                                       }  # TODO: Bull Minus Bear file missing
 
         # Clusters without computed CSI file dictionary:
         self.no_csi_clusters_file_dict = {'Bullish Intensity': 'Twitaggmat.csv'}  # TODO: add if need be
